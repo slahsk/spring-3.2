@@ -1,4 +1,4 @@
-package org.springframework.beans.facotry;
+package org.springframework.beans.factory;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.NoSuchBeanDefinitionException;
