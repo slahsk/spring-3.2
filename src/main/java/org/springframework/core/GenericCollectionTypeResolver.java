@@ -1,6 +1,7 @@
 package org.springframework.core;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.MalformedParameterizedTypeException;
 import java.lang.reflect.ParameterizedType;
@@ -11,19 +12,18 @@ import java.util.Collection;
 import java.util.Map;
 
 public abstract class GenericCollectionTypeResolver {
-	
+
 	public static Class<?> getCollectionParameterType(MethodParameter methodParam) {
 		return getGenericParameterType(methodParam, Collection.class, 0);
 	}
-	
+
 	public static Class<?> getMapKeyParameterType(MethodParameter methodParam) {
 		return getGenericParameterType(methodParam, Map.class, 0);
 	}
-	
+
 	public static Class<?> getMapValueParameterType(MethodParameter methodParam) {
 		return getGenericParameterType(methodParam, Map.class, 1);
 	}
-
 
 	private static Class<?> getGenericParameterType(MethodParameter methodParam, Class<?> source, int typeIndex) {
 		return extractType(GenericTypeResolver.getTargetType(methodParam), source, typeIndex, methodParam.typeVariableMap, methodParam.typeIndexesPerLevel,
@@ -51,10 +51,9 @@ public abstract class GenericCollectionTypeResolver {
 			return null;
 		}
 	}
-	
-	private static Class<?> extractTypeFromParameterizedType(ParameterizedType ptype, Class<?> source, int typeIndex,
-			Map<TypeVariable, Type> typeVariableMap, Map<Integer, Integer> typeIndexesPerLevel,
-			int nestingLevel, int currentLevel) {
+
+	private static Class<?> extractTypeFromParameterizedType(ParameterizedType ptype, Class<?> source, int typeIndex, Map<TypeVariable, Type> typeVariableMap,
+			Map<Integer, Integer> typeIndexesPerLevel, int nestingLevel, int currentLevel) {
 
 		if (!(ptype.getRawType() instanceof Class)) {
 			return null;
@@ -72,8 +71,7 @@ public abstract class GenericCollectionTypeResolver {
 		if (source != null && !source.isAssignableFrom(rawType)) {
 			return null;
 		}
-		Class fromSuperclassOrInterface = extractTypeFromClass(rawType, source, typeIndex, typeVariableMap, typeIndexesPerLevel,
-				nestingLevel, currentLevel);
+		Class fromSuperclassOrInterface = extractTypeFromClass(rawType, source, typeIndex, typeVariableMap, typeIndexesPerLevel, nestingLevel, currentLevel);
 		if (fromSuperclassOrInterface != null) {
 			return fromSuperclassOrInterface;
 		}
@@ -92,8 +90,7 @@ public abstract class GenericCollectionTypeResolver {
 			Type[] upperBounds = wildcardType.getUpperBounds();
 			if (upperBounds != null && upperBounds.length > 0 && !Object.class.equals(upperBounds[0])) {
 				paramType = upperBounds[0];
-			}
-			else {
+			} else {
 				Type[] lowerBounds = wildcardType.getLowerBounds();
 				if (lowerBounds != null && lowerBounds.length > 0 && !Object.class.equals(lowerBounds[0])) {
 					paramType = lowerBounds[0];
@@ -104,34 +101,31 @@ public abstract class GenericCollectionTypeResolver {
 			paramType = ((ParameterizedType) paramType).getRawType();
 		}
 		if (paramType instanceof GenericArrayType) {
-			// A generic array type... Let's turn it into a straight array type if possible.
+			// A generic array type... Let's turn it into a straight array type
+			// if possible.
 			Type compType = ((GenericArrayType) paramType).getGenericComponentType();
 			if (compType instanceof Class) {
 				return Array.newInstance((Class) compType, 0).getClass();
 			}
-		}
-		else if (paramType instanceof Class) {
+		} else if (paramType instanceof Class) {
 			// We finally got a straight Class...
 			return (Class) paramType;
 		}
 		return null;
 	}
 
-	
-	private static Class<?> extractTypeFromClass(Class<?> clazz, Class<?> source, int typeIndex,
-			Map<TypeVariable, Type> typeVariableMap, Map<Integer, Integer> typeIndexesPerLevel,
-			int nestingLevel, int currentLevel) {
+	private static Class<?> extractTypeFromClass(Class<?> clazz, Class<?> source, int typeIndex, Map<TypeVariable, Type> typeVariableMap,
+			Map<Integer, Integer> typeIndexesPerLevel, int nestingLevel, int currentLevel) {
 
 		if (clazz.getName().startsWith("java.util.")) {
 			return null;
 		}
 		if (clazz.getSuperclass() != null && isIntrospectionCandidate(clazz.getSuperclass())) {
 			try {
-				return extractType(clazz.getGenericSuperclass(), source, typeIndex, typeVariableMap,
-						typeIndexesPerLevel, nestingLevel, currentLevel);
-			}
-			catch (MalformedParameterizedTypeException ex) {
-				// from getGenericSuperclass() - ignore and continue with interface introspection
+				return extractType(clazz.getGenericSuperclass(), source, typeIndex, typeVariableMap, typeIndexesPerLevel, nestingLevel, currentLevel);
+			} catch (MalformedParameterizedTypeException ex) {
+				// from getGenericSuperclass() - ignore and continue with
+				// interface introspection
 			}
 		}
 		Type[] ifcs = clazz.getGenericInterfaces();
@@ -148,8 +142,24 @@ public abstract class GenericCollectionTypeResolver {
 		}
 		return null;
 	}
-	
+
 	private static boolean isIntrospectionCandidate(Class clazz) {
 		return (Collection.class.isAssignableFrom(clazz) || Map.class.isAssignableFrom(clazz));
+	}
+
+	public static Class<?> getCollectionFieldType(Field collectionField, int nestingLevel, Map<Integer, Integer> typeIndexesPerLevel) {
+		return getGenericFieldType(collectionField, Collection.class, 0, typeIndexesPerLevel, nestingLevel);
+	}
+
+	private static Class<?> getGenericFieldType(Field field, Class<?> source, int typeIndex, Map<Integer, Integer> typeIndexesPerLevel, int nestingLevel) {
+		return extractType(field.getGenericType(), source, typeIndex, null, typeIndexesPerLevel, nestingLevel, 1);
+	}
+	
+	public static Class<?> getMapKeyFieldType(Field mapField, int nestingLevel, Map<Integer, Integer> typeIndexesPerLevel) {
+		return getGenericFieldType(mapField, Map.class, 0, typeIndexesPerLevel, nestingLevel);
+	}
+	
+	public static Class<?> getMapValueFieldType(Field mapField, int nestingLevel, Map<Integer, Integer> typeIndexesPerLevel) {
+		return getGenericFieldType(mapField, Map.class, 1, typeIndexesPerLevel, nestingLevel);
 	}
 }

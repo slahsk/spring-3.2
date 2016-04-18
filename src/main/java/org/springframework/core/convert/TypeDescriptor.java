@@ -1,6 +1,5 @@
 package org.springframework.core.convert;
 
-import java.beans.ParameterDescriptor;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
@@ -12,6 +11,7 @@ import java.util.Map;
 import org.springframework.core.MethodParameter;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.ObjectUtils;
 
 @SuppressWarnings("serial")
 public class TypeDescriptor implements Serializable {
@@ -151,7 +151,227 @@ public class TypeDescriptor implements Serializable {
 		return getAnnotation(annotationType) != null;
 	}
 
+	
+	@SuppressWarnings("unchecked")
+	public <T extends Annotation> T getAnnotation(Class<T> annotationType) {
+		for (Annotation annotation : this.annotations) {
+			if (annotation.annotationType().equals(annotationType)) {
+				return (T) annotation;
+			}
+		}
+		for (Annotation metaAnn : this.annotations) {
+			T ann = metaAnn.annotationType().getAnnotation(annotationType);
+			if (ann != null) {
+				return ann;
+			}
+		}
+		return null;
+	}
+	
+	public boolean isAssignableTo(TypeDescriptor typeDescriptor) {
+		boolean typesAssignable = typeDescriptor.getObjectType().isAssignableFrom(getObjectType());
+		if (!typesAssignable) {
+			return false;
+		}
+		if (isArray() && typeDescriptor.isArray()) {
+			return getElementTypeDescriptor().isAssignableTo(typeDescriptor.getElementTypeDescriptor());
+		}
+		else if (isCollection() && typeDescriptor.isCollection()) {
+			return isNestedAssignable(getElementTypeDescriptor(), typeDescriptor.getElementTypeDescriptor());
+		}
+		else if (isMap() && typeDescriptor.isMap()) {
+			return isNestedAssignable(getMapKeyTypeDescriptor(), typeDescriptor.getMapKeyTypeDescriptor()) &&
+				isNestedAssignable(getMapValueTypeDescriptor(), typeDescriptor.getMapValueTypeDescriptor());
+		}
+		else {
+			return true;
+		}
+	}
+	
+	public boolean isCollection() {
+		return Collection.class.isAssignableFrom(getType());
+	}
+	
+	public boolean isArray() {
+		return getType().isArray();
+	}
+	
+	public TypeDescriptor getElementTypeDescriptor() {
+		assertCollectionOrArray();
+		return this.elementTypeDescriptor;
+	}
+	
+	public TypeDescriptor elementTypeDescriptor(Object element) {
+		return narrow(element, getElementTypeDescriptor());
+	}
+	
+	public boolean isMap() {
+		return Map.class.isAssignableFrom(getType());
+	}
+	
+	public TypeDescriptor getMapKeyTypeDescriptor() {
+		assertMap();
+		return this.mapKeyTypeDescriptor;
+	}
+	
+	public TypeDescriptor getMapKeyTypeDescriptor(Object mapKey) {
+		return narrow(mapKey, getMapKeyTypeDescriptor());
+	}
+	
+	public TypeDescriptor getMapValueTypeDescriptor() {
+		assertMap();
+		return this.mapValueTypeDescriptor;
+	}
+	
+	public TypeDescriptor getMapValueTypeDescriptor(Object mapValue) {
+		return narrow(mapValue, getMapValueTypeDescriptor());
+	}
+	
+	@Deprecated
+	public Class<?> getElementType() {
+		return getElementTypeDescriptor().getType();
+	}
+	
+	@Deprecated
+	public Class<?> getMapKeyType() {
+		return getMapKeyTypeDescriptor().getType();
+	}
+	
+	@Deprecated
+	public Class<?> getMapValueType() {
+		return getMapValueTypeDescriptor().getType();
+	}
+	
+	private TypeDescriptor(Class<?> type) {
+		this(new ClassDescriptor(type));
+	}
+
+	private TypeDescriptor(Class<?> collectionType, TypeDescriptor elementTypeDescriptor) {
+		this(collectionType, elementTypeDescriptor, null, null, EMPTY_ANNOTATION_ARRAY);
+	}
+
+	private TypeDescriptor(Class<?> mapType, TypeDescriptor keyTypeDescriptor, TypeDescriptor valueTypeDescriptor) {
+		this(mapType, null, keyTypeDescriptor, valueTypeDescriptor, EMPTY_ANNOTATION_ARRAY);
+	}
+
+	private TypeDescriptor(Class<?> type, TypeDescriptor elementTypeDescriptor, TypeDescriptor mapKeyTypeDescriptor,
+			TypeDescriptor mapValueTypeDescriptor, Annotation[] annotations) {
+
+		this.type = type;
+		this.elementTypeDescriptor = elementTypeDescriptor;
+		this.mapKeyTypeDescriptor = mapKeyTypeDescriptor;
+		this.mapValueTypeDescriptor = mapValueTypeDescriptor;
+		this.annotations = annotations;
+	}
+
+	TypeDescriptor(AbstractDescriptor descriptor) {
+		this.type = descriptor.getType();
+		this.elementTypeDescriptor = descriptor.getElementTypeDescriptor();
+		this.mapKeyTypeDescriptor = descriptor.getMapKeyTypeDescriptor();
+		this.mapValueTypeDescriptor = descriptor.getMapValueTypeDescriptor();
+		this.annotations = descriptor.getAnnotations();
+	}
+
+
+	// internal helpers
+
 	static Annotation[] nullSafeAnnotations(Annotation[] annotations) {
 		return (annotations != null ? annotations : EMPTY_ANNOTATION_ARRAY);
 	}
+
+	private static TypeDescriptor nested(AbstractDescriptor descriptor, int nestingLevel) {
+		for (int i = 0; i < nestingLevel; i++) {
+			descriptor = descriptor.nested();
+			if (descriptor == null) {
+				return null;
+			}
+		}
+		return new TypeDescriptor(descriptor);
+	}
+
+	private void assertCollectionOrArray() {
+		if (!isCollection() && !isArray()) {
+			throw new IllegalStateException("Not a java.util.Collection or Array");
+		}
+	}
+
+	private void assertMap() {
+		if (!isMap()) {
+			throw new IllegalStateException("Not a java.util.Map");
+		}
+	}
+
+	private TypeDescriptor narrow(Object value, TypeDescriptor typeDescriptor) {
+		if (typeDescriptor != null) {
+			return typeDescriptor.narrow(value);
+		}
+		else {
+			return (value != null ? new TypeDescriptor(value.getClass(), null, null, null, this.annotations) : null);
+		}
+	}
+
+	private boolean isNestedAssignable(TypeDescriptor nestedTypeDescriptor, TypeDescriptor otherNestedTypeDescriptor) {
+		if (nestedTypeDescriptor == null || otherNestedTypeDescriptor == null) {
+			return true;
+		}
+		return nestedTypeDescriptor.isAssignableTo(otherNestedTypeDescriptor);
+	}
+
+	private String wildcard(TypeDescriptor typeDescriptor) {
+		return (typeDescriptor != null ? typeDescriptor.toString() : "?");
+	}
+
+
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof TypeDescriptor)) {
+			return false;
+		}
+		TypeDescriptor other = (TypeDescriptor) obj;
+		if (!ObjectUtils.nullSafeEquals(this.type, other.type)) {
+			return false;
+		}
+		if (this.annotations.length != other.annotations.length) {
+			return false;
+		}
+		for (Annotation ann : this.annotations) {
+			if (other.getAnnotation(ann.annotationType()) == null) {
+				return false;
+			}
+		}
+		if (isCollection() || isArray()) {
+			return ObjectUtils.nullSafeEquals(this.elementTypeDescriptor, other.elementTypeDescriptor);
+		}
+		else if (isMap()) {
+			return ObjectUtils.nullSafeEquals(this.mapKeyTypeDescriptor, other.mapKeyTypeDescriptor) &&
+					ObjectUtils.nullSafeEquals(this.mapValueTypeDescriptor, other.mapValueTypeDescriptor);
+		}
+		else {
+			return true;
+		}
+	}
+
+	public int hashCode() {
+		return getType().hashCode();
+	}
+
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		for (Annotation ann : this.annotations) {
+			builder.append("@").append(ann.annotationType().getName()).append(' ');
+		}
+		builder.append(ClassUtils.getQualifiedName(getType()));
+		if (isMap()) {
+			builder.append("<").append(wildcard(this.mapKeyTypeDescriptor));
+			builder.append(", ").append(wildcard(this.mapValueTypeDescriptor)).append(">");
+		}
+		else if (isCollection()) {
+			builder.append("<").append(wildcard(this.elementTypeDescriptor)).append(">");
+		}
+		return builder.toString();
+	}
+
+
 }
