@@ -1,5 +1,10 @@
 package org.springframework.beans.factory.config;
 
+import java.beans.PropertyEditor;
+
+import org.springframework.beans.PropertyEditorRegistrar;
+import org.springframework.beans.PropertyEditorRegistry;
+import org.springframework.beans.TypeConverter;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.HierarchicalBeanFactory;
 import org.springframework.core.convert.ConversionService;
@@ -29,5 +34,15 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	BeanExpressionResolver getBeanExpressionResolver();
 	
 	void setConversionService(ConversionService conversionService);
+	
+	ConversionService getConversionService();
+	
+	void addPropertyEditorRegistrar(PropertyEditorRegistrar registrar);
+	
+	void registerCustomEditor(Class<?> requiredType, Class<? extends PropertyEditor> propertyEditorClass);
+	
+	void copyRegisteredEditorsTo(PropertyEditorRegistry registry);
+	
+	void setTypeConverter(TypeConverter typeConverter);
 
 }
