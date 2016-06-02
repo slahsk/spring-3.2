@@ -5,6 +5,8 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 
 import org.junit.Test;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.util.ClassUtils;
 
 public class SingletonBeanFactoryLocatorTests {
 	

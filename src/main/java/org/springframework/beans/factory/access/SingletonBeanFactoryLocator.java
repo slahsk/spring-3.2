@@ -8,18 +8,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.FatalBeanException;
-import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.access.BeanFactoryReference;
-import org.springframework.beans.factory.access.BootstrapException;
-import org.springframework.beans.factory.access.SingletonBeanFactoryLocator.BeanFactoryGroup;
-import org.springframework.beans.factory.access.SingletonBeanFactoryLocator.CountingBeanFactoryReference;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternUtils;
 
@@ -141,18 +132,18 @@ public class SingletonBeanFactoryLocator implements BeanFactoryLocator {
 	}
 
 	protected void initializeDefinition(BeanFactory groupDef) {
-		if (groupDef instanceof ConfigurableListableBeanFactory) {
+	/*	if (groupDef instanceof ConfigurableListableBeanFactory) {
 			((ConfigurableListableBeanFactory) groupDef).preInstantiateSingletons();
-		}
+		}*/
 	}
 
 	protected void destroyDefinition(BeanFactory groupDef, String selector) {
-		if (groupDef instanceof ConfigurableBeanFactory) {
+/*		if (groupDef instanceof ConfigurableBeanFactory) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Factory group with selector '" + selector + "' being released, as there are no more references to it");
 			}
 			((ConfigurableBeanFactory) groupDef).destroySingletons();
-		}
+		}*/
 	}
 
 	private static class BeanFactoryGroup {

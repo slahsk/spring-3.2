@@ -30,5 +30,25 @@ public abstract class ClassUtils {
 		result.insert(0, clazz.getName());
 		return result.toString();
 	}
-
+	
+	public static String addResourcePathToPackagePath(Class<?> clazz, String resourceName) {
+		Assert.notNull(resourceName, "Resource name must not be null");
+		if (!resourceName.startsWith("/")) {
+			return classPackageAsResourcePath(clazz) + "/" + resourceName;
+		}
+		return classPackageAsResourcePath(clazz) + resourceName;
+	}
+	
+	public static String classPackageAsResourcePath(Class<?> clazz) {
+		if (clazz == null) {
+			return "";
+		}
+		String className = clazz.getName();
+		int packageEndIndex = className.lastIndexOf('.');
+		if (packageEndIndex == -1) {
+			return "";
+		}
+		String packageName = className.substring(0, packageEndIndex);
+		return packageName.replace('.', '/');
+	}
 }
