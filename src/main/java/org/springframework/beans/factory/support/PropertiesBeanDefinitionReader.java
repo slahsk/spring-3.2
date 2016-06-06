@@ -1,5 +1,148 @@
 package org.springframework.beans.factory.support;
 
-public class PropertiesBeanDefinitionReader extends AbstractBeanDefinitionReader{
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.ResourceBundle;
+
+import org.springframework.beans.BeansException;
+import org.springframework.beans.PropertyAccessor;
+import org.springframework.beans.factory.BeanDefinitionStoreException;
+import org.springframework.core.env.Environment;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
+
+public class PropertiesBeanDefinitionReader extends AbstractBeanDefinitionReader {
+
+	public static final String SEPARATOR = ".";
+
+	public PropertiesBeanDefinitionReader(BeanDefinitionRegistry registry) {
+		super(registry);
+	}
+
+	public int registerBeanDefinitions(ResourceBundle rb) throws BeanDefinitionStoreException {
+		return registerBeanDefinitions(rb, null);
+	}
+
+	public int registerBeanDefinitions(ResourceBundle rb, String prefix) throws BeanDefinitionStoreException {
+		// Simply create a map and call overloaded method.
+		Map<String, Object> map = new HashMap<String, Object>();
+		Enumeration keys = rb.getKeys();
+		while (keys.hasMoreElements()) {
+			String key = (String) keys.nextElement();
+			map.put(key, rb.getObject(key));
+		}
+		return registerBeanDefinitions(map, prefix);
+	}
+
+	public int registerBeanDefinitions(Map map) throws BeansException {
+		return registerBeanDefinitions(map, null);
+	}
+
+	public int registerBeanDefinitions(Map map, String prefix) throws BeansException {
+		return registerBeanDefinitions(map, prefix, "Map " + map);
+	}
+
+	public int registerBeanDefinitions(Map map, String prefix, String resourceDescription) throws BeansException {
+
+		if (prefix == null) {
+			prefix = "";
+		}
+		int beanCount = 0;
+
+		for (Object key : map.keySet()) {
+			if (!(key instanceof String)) {
+				throw new IllegalArgumentException("Illegal key [" + key + "]: only Strings allowed");
+			}
+			String keyString = (String) key;
+			if (keyString.startsWith(prefix)) {
+				// Key is of form: prefix<name>.property
+				String nameAndProperty = keyString.substring(prefix.length());
+				// Find dot before property name, ignoring dots in property
+				// keys.
+				int sepIdx = -1;
+				int propKeyIdx = nameAndProperty.indexOf(PropertyAccessor.PROPERTY_KEY_PREFIX);
+				if (propKeyIdx != -1) {
+					sepIdx = nameAndProperty.lastIndexOf(SEPARATOR, propKeyIdx);
+				} else {
+					sepIdx = nameAndProperty.lastIndexOf(SEPARATOR);
+				}
+
+				if (sepIdx != -1) {
+					/*
+					 * String beanName = nameAndProperty.substring(0, sepIdx);
+					 * if (logger.isDebugEnabled()) {
+					 * logger.debug("Found bean name '" + beanName + "'"); } if
+					 * (!getRegistry().containsBeanDefinition(beanName)) { // If
+					 * we haven't already registered it...
+					 * registerBeanDefinition(beanName, map, prefix + beanName,
+					 * resourceDescription); ++beanCount; }
+					 */
+				} else {
+					// Ignore it: It wasn't a valid bean name and property,
+					// although it did start with the required prefix.
+					if (logger.isDebugEnabled()) {
+						logger.debug("Invalid bean name and property [" + nameAndProperty + "]");
+					}
+				}
+			}
+		}
+
+		return beanCount;
+	}
+
+	@Override
+	public BeanDefinitionRegistry getRegistry() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ResourceLoader getResourceLoader() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ClassLoader getBeanClassLoader() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public BeanNameGenerator getBeanNameGenerator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int loadBeanDefinitions(Resource resource) throws BeanDefinitionStoreException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int loadBeanDefinitions(Resource... resources) throws BeanDefinitionStoreException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int loadBeanDefinitions(String location) throws BeanDefinitionStoreException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int loadBeanDefinitions(String... locations) throws BeanDefinitionStoreException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public Environment getEnvironment() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
 }
