@@ -1,7 +1,7 @@
 package org.springframework.beans.factory.support;
 
+import org.springframework.beans.factory.BeanDefinitionHolder;
 import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.config.BeanDefinitionHolder;
 
 @SuppressWarnings("serial")
 public class RootBeanDefinition extends AbstractBeanDefinition {

@@ -27,18 +27,9 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-
-/**
- * Tests properties population and autowire behavior.
- *
- * @author Rod Johnson
- * @author Juergen Hoeller
- * @author Rick Evans
- * @author Sam Brannen
- * @author Chris Beams
- * @author Phillip Webb
- */
+import org.springframework.beans.factory.support.PropertiesBeanDefinitionReader;
 public class DefaultListableBeanFactoryTests {
 
 	private static final Log factoryLog = LogFactory.getLog(DefaultListableBeanFactory.class);

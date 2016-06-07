@@ -11,6 +11,7 @@ import org.springframework.beans.PropertyEditorRegistry;
 import org.springframework.beans.TypeConverter;
 import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanExpressionResolver;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -104,6 +105,27 @@ public abstract class AbstractBeanFactory  extends FactoryBeanRegistrySupport im
 
 			return mbd;
 		}
+	}
+	
+	public boolean isFactoryBean(String name) throws NoSuchBeanDefinitionException {
+		String beanName = transformedBeanName(name);
+
+		Object beanInstance = getSingleton(beanName, false);
+		if (beanInstance != null) {
+			return (beanInstance instanceof FactoryBean);
+		}
+		else if (containsSingleton(beanName)) {
+			// null instance registered
+			return false;
+		}
+
+		// No singleton instance found -> check bean definition.
+		if (!containsBeanDefinition(beanName) && getParentBeanFactory() instanceof ConfigurableBeanFactory) {
+			// No bean definition found in this factory -> delegate to parent.
+			return ((ConfigurableBeanFactory) getParentBeanFactory()).isFactoryBean(name);
+		}
+
+		return isFactoryBean(beanName, getMergedLocalBeanDefinition(beanName));
 	}
 	
 	protected abstract BeanDefinition getBeanDefinition(String beanName) throws BeansException;
