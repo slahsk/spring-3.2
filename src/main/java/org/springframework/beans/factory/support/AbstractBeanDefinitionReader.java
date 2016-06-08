@@ -4,6 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.EnvironmentCapable;
+import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.util.Assert;
 
@@ -25,7 +26,7 @@ public abstract class AbstractBeanDefinitionReader implements EnvironmentCapable
 			this.resourceLoader = (ResourceLoader) this.registry;
 		}
 		else {
-			//this.resourceLoader = new PathMatchingResourcePatternResolver();
+			this.resourceLoader = new PathMatchingResourcePatternResolver();
 		}
 
 		// Inherit Environment if possible
@@ -33,7 +34,11 @@ public abstract class AbstractBeanDefinitionReader implements EnvironmentCapable
 			this.environment = ((EnvironmentCapable) this.registry).getEnvironment();
 		}
 		else {
-			//this.environment = new StandardEnvironment();
+			this.environment = new StandardEnvironment();
 		}
+	}
+	
+	public final BeanDefinitionRegistry getRegistry() {
+		return this.registry;
 	}
 }
