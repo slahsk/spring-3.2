@@ -9,7 +9,12 @@ public class MethodOverrides {
 	
 	public MethodOverrides() {
 	}
-
+	
+	
+	public boolean isEmpty() {
+		return this.overrides.isEmpty();
+	}
+	
 	public MethodOverrides(MethodOverrides other) {
 		addOverrides(other);
 	}

@@ -65,6 +65,10 @@ public class ConstructorArgumentValues {
 		this.indexedArgumentValues.put(key, newValue);
 	}
 	
+	public void addIndexedArgumentValue(int index, Object value) {
+		addIndexedArgumentValue(index, new ValueHolder(value));
+	}
+	
 	public static class ValueHolder implements BeanMetadataElement {
 
 		private Object value;

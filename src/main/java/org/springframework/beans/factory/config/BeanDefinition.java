@@ -12,6 +12,7 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement{
 	
 	String SCOPE_PROTOTYPE = ConfigurableBeanFactory.SCOPE_PROTOTYPE;
 	
+	
 	void setParentName(String parentName);
 	
 	String getParentName();

@@ -11,6 +11,7 @@ import org.springframework.beans.factory.config.ConstructorArgumentValues;
 import org.springframework.core.io.DescriptiveResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 
 @SuppressWarnings("serial")
 public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccessor implements BeanDefinition, Cloneable {
@@ -74,6 +75,15 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	
 	private MutablePropertyValues propertyValues;
 	
+	protected AbstractBeanDefinition() {
+		this(null, null);
+	}
+	
+	protected AbstractBeanDefinition(ConstructorArgumentValues cargs, MutablePropertyValues pvs) {
+		setConstructorArgumentValues(cargs);
+		setPropertyValues(pvs);
+	}
+	
 	
 	protected AbstractBeanDefinition(BeanDefinition original) {
 		setParentName(original.getParentName());
@@ -115,6 +125,42 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 		}
 		
 	}
+	
+	public void validate() throws BeanDefinitionValidationException {
+		if (!getMethodOverrides().isEmpty() && getFactoryMethodName() != null) {
+			throw new BeanDefinitionValidationException(
+					"Cannot combine static factory method with method overrides: " +
+					"the static factory method must create the instance");
+		}
+
+		if (hasBeanClass()) {
+			prepareMethodOverrides();
+		}
+	}
+	
+	public void prepareMethodOverrides() throws BeanDefinitionValidationException {
+		// Check that lookup methods exists.
+		MethodOverrides methodOverrides = getMethodOverrides();
+		if (!methodOverrides.isEmpty()) {
+			for (MethodOverride mo : methodOverrides.getOverrides()) {
+				prepareMethodOverride(mo);
+			}
+		}
+	}
+	
+	protected void prepareMethodOverride(MethodOverride mo) throws BeanDefinitionValidationException {
+		int count = ClassUtils.getMethodCountForName(getBeanClass(), mo.getMethodName());
+		if (count == 0) {
+			throw new BeanDefinitionValidationException(
+					"Invalid method override: no method with name '" + mo.getMethodName() +
+					"' on class [" + getBeanClassName() + "]");
+		}
+		else if (count == 1) {
+			// Mark override as not overloaded, to avoid the overhead of arg type checking.
+			mo.setOverloaded(false);
+		}
+	}
+	
 	
 	
 	public void copyQualifiersFrom(AbstractBeanDefinition source) {

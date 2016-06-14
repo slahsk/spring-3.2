@@ -11,6 +11,7 @@ import org.springframework.beans.PropertyEditorRegistry;
 import org.springframework.beans.TypeConverter;
 import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanExpressionResolver;
@@ -22,7 +23,6 @@ public abstract class AbstractBeanFactory  extends FactoryBeanRegistrySupport im
 	private final Map<String, RootBeanDefinition> mergedBeanDefinitions = new ConcurrentHashMap<String, RootBeanDefinition>(64);
 	
 	protected RootBeanDefinition getMergedLocalBeanDefinition(String beanName) throws BeansException {
-		// Quick check on the concurrent map first, with minimal locking.
 		RootBeanDefinition mbd = this.mergedBeanDefinitions.get(beanName);
 		if (mbd != null) {
 			return mbd;
@@ -56,7 +56,6 @@ public abstract class AbstractBeanFactory  extends FactoryBeanRegistrySupport im
 					}
 				}
 				else {
-					// Child bean definition: needs to be merged with parent.
 					BeanDefinition pbd;
 					try {
 						String parentBeanName = transformedBeanName(bd.getParentName());
@@ -80,35 +79,42 @@ public abstract class AbstractBeanFactory  extends FactoryBeanRegistrySupport im
 					}
 					// Deep copy with overridden values.
 					mbd = new RootBeanDefinition(pbd);
-					mbd.overrideFrom(bd);
+					//mbd.overrideFrom(bd);
 				}
 
-				// Set default singleton scope, if not configured before.
 				if (!StringUtils.hasLength(mbd.getScope())) {
 					mbd.setScope(RootBeanDefinition.SCOPE_SINGLETON);
 				}
 
-				// A bean contained in a non-singleton bean cannot be a singleton itself.
-				// Let's correct this on the fly here, since this might be the result of
-				// parent-child merging for the outer bean, in which case the original inner bean
-				// definition will not have inherited the merged outer bean's singleton status.
-				if (containingBd != null && !containingBd.isSingleton() && mbd.isSingleton()) {
+				/*if (containingBd != null && !containingBd.isSingleton() && mbd.isSingleton()) {
 					mbd.setScope(containingBd.getScope());
-				}
+				}*/
 
-				// Only cache the merged bean definition if we're already about to create an
-				// instance of the bean, or at least have already created an instance before.
-				if (containingBd == null && isCacheBeanMetadata() && isBeanEligibleForMetadataCaching(beanName)) {
+			/*	if (containingBd == null && isCacheBeanMetadata() && isBeanEligibleForMetadataCaching(beanName)) {
 					this.mergedBeanDefinitions.put(beanName, mbd);
-				}
+				}*/
 			}
 
 			return mbd;
 		}
 	}
 	
-	public boolean isFactoryBean(String name) throws NoSuchBeanDefinitionException {
+	protected String transformedBeanName(String name) {
+		return canonicalName(BeanFactoryUtils.transformedBeanName(name));
+	}
+	
+	public BeanDefinition getMergedBeanDefinition(String name) throws BeansException {
 		String beanName = transformedBeanName(name);
+
+		if (!containsBeanDefinition(beanName) && getParentBeanFactory() instanceof ConfigurableBeanFactory) {
+			return ((ConfigurableBeanFactory) getParentBeanFactory()).getMergedBeanDefinition(beanName);
+		}
+		return getMergedLocalBeanDefinition(beanName);
+	}
+	
+	
+	public boolean isFactoryBean(String name) throws NoSuchBeanDefinitionException {
+		/*String beanName = transformedBeanName(name);
 
 		Object beanInstance = getSingleton(beanName, false);
 		if (beanInstance != null) {
@@ -125,10 +131,17 @@ public abstract class AbstractBeanFactory  extends FactoryBeanRegistrySupport im
 			return ((ConfigurableBeanFactory) getParentBeanFactory()).isFactoryBean(name);
 		}
 
-		return isFactoryBean(beanName, getMergedLocalBeanDefinition(beanName));
+		return isFactoryBean(beanName, getMergedLocalBeanDefinition(beanName));*/
+		return false;
 	}
 	
 	protected abstract BeanDefinition getBeanDefinition(String beanName) throws BeansException;
+	protected abstract boolean containsBeanDefinition(String beanName);
+	
+	protected void clearMergedBeanDefinition(String beanName) {
+		this.mergedBeanDefinitions.remove(beanName);
+	}
+	
 	
 	@Override
 	public BeanFactory getParentBeanFactory() {

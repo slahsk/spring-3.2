@@ -41,6 +41,11 @@ public class PropertyValue  extends BeanMetadataAttributeAccessor implements Ser
 		copyAttributesFrom(original);
 	}
 	
+	public PropertyValue(String name, Object value) {
+		this.name = name;
+		this.value = value;
+	}
+	
 	protected void copyAttributesFrom(AttributeAccessor source) {
 		Assert.notNull(source, "Source must not be null");
 		String[] attributeNames = source.attributeNames();

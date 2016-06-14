@@ -7,6 +7,7 @@ import org.springframework.beans.PropertyEditorRegistry;
 import org.springframework.beans.TypeConverter;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.HierarchicalBeanFactory;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.core.convert.ConversionService;
 
 public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, SingletonBeanRegistry{
@@ -14,6 +15,9 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	String SCOPE_SINGLETON = "singleton";
 	
 	String SCOPE_PROTOTYPE = "prototype";
+	
+	
+	BeanDefinition getMergedBeanDefinition(String beanName) throws NoSuchBeanDefinitionException;
 	
 	void setParentBeanFactory(BeanFactory parentBeanFactory) throws IllegalStateException;
 	

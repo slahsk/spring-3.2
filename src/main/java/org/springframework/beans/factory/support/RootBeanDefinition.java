@@ -15,7 +15,11 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	public RootBeanDefinition() {
 		super();
 	}
-
+	
+	RootBeanDefinition(BeanDefinition original) {
+		super(original);
+	}
+	
 	public RootBeanDefinition(Class<?> beanClass) {
 		super();
 		setBeanClass(beanClass);

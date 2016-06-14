@@ -19,7 +19,30 @@ import org.springframework.util.StringUtils;
 
 public class PropertiesBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
+	public static final String TRUE_VALUE = "true";
+	
 	public static final String SEPARATOR = ".";
+	
+	public static final String CLASS_KEY = "(class)";
+	
+	public static final String PARENT_KEY = "(parent)";
+	
+	public static final String SCOPE_KEY = "(scope)";
+	
+	public static final String SINGLETON_KEY = "(singleton)";
+	
+	public static final String ABSTRACT_KEY = "(abstract)";
+	
+	public static final String LAZY_INIT_KEY = "(lazy-init)";
+
+	public static final String REF_SUFFIX = "(ref)";
+	
+	public static final String REF_PREFIX = "*";
+	
+	public static final String CONSTRUCTOR_ARG_PREFIX = "$";
+	
+	private String defaultParentBean;
+	
 
 	public PropertiesBeanDefinitionReader(BeanDefinitionRegistry registry) {
 		super(registry);
@@ -148,18 +171,13 @@ public class PropertiesBeanDefinitionReader extends AbstractBeanDefinitionReader
 					}
 				}
 				else if (property.endsWith(REF_SUFFIX)) {
-					// This isn't a real property, but a reference to another prototype
-					// Extract property name: property is of form dog(ref)
 					property = property.substring(0, property.length() - REF_SUFFIX.length());
 					String ref = StringUtils.trimWhitespace((String) entry.getValue());
 
-					// It doesn't matter if the referenced bean hasn't yet been registered:
-					// this will ensure that the reference is resolved at runtime.
 					Object val = new RuntimeBeanReference(ref);
 					pvs.add(property, val);
 				}
 				else {
-					// It's a normal bean property.
 					pvs.add(property, readValue(entry));
 				}
 			}
@@ -169,9 +187,6 @@ public class PropertiesBeanDefinitionReader extends AbstractBeanDefinitionReader
 			logger.debug("Registering bean definition for bean name '" + beanName + "' with " + pvs);
 		}
 
-		// Just use default parent if we're not dealing with the parent itself,
-		// and if there's no class name specified. The latter has to happen for
-		// backwards compatibility reasons.
 		if (parent == null && className == null && !beanName.equals(this.defaultParentBean)) {
 			parent = this.defaultParentBean;
 		}
@@ -192,6 +207,26 @@ public class PropertiesBeanDefinitionReader extends AbstractBeanDefinitionReader
 		catch (LinkageError err) {
 			throw new CannotLoadBeanClassException(resourceDescription, beanName, className, err);
 		}
+	}
+	
+	private Object readValue(Map.Entry entry) {
+		Object val = entry.getValue();
+		if (val instanceof String) {
+			String strVal = (String) val;
+			// If it starts with a reference prefix...
+			if (strVal.startsWith(REF_PREFIX)) {
+				// Expand the reference.
+				String targetName = strVal.substring(1);
+				if (targetName.startsWith(REF_PREFIX)) {
+					// Escaped prefix -> use plain value.
+					val = targetName;
+				}
+				else {
+					val = new RuntimeBeanReference(targetName);
+				}
+			}
+		}
+		return val;
 	}
 
 
